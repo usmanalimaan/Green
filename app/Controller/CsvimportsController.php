@@ -71,13 +71,13 @@ class CsvimportsController extends AppController {
                                   $import_discription="INSERT into oc_product_description(product_id,language_id,name,description,csvimport,deep_link) values('$product_id','1','$data[0]','$data[1]','1','$data[7]')";
                                   $cat_id=$this->request->data['Category']['category_id'];
                                   $import_pod_cat="INSERT into oc_product_to_category(product_id,category_id) values('$product_id','$cat_id')";
-                                  $import_pod_stor="INSERT into oc_product_to_store(product_id,store_id) values('$product_id','0')";
+                                  // $import_pod_stor="INSERT into oc_product_to_store(product_id,store_id) values('$product_id','0')";
                                   // $this->request->data['Category']['product_id']=$product_id;
                                 // $this->Category->create();
                                   // debug($this->Category->save($this->request->date));
                                   $this->ProductDiscription->query($import_discription);
                                   $this->Category->query($import_pod_cat);
-                                  $this->productStore->query($import_pod_stor);
+                                  // $this->productStore->query($import_pod_stor);
 
                                 // debug($this->request->data);
                                 // exit();
@@ -107,22 +107,27 @@ class CsvimportsController extends AppController {
         }
     }
 
-    public function download(){
+    // public function download(){
 
-        $this->loadModel('Csvimport');
-        $this->response->file(WWW_ROOT.'/attachments/csvimports/sample.csv', array(
-            'download' => true, 
-            'name' => 'sample.csv'
-        ));
-        return $this->response;
-    }
+    //     $this->loadModel('Csvimport');
+    //     $this->response->file(WWW_ROOT.'/attachments/csvimports/sample.csv', array(
+    //         'download' => true, 
+    //         'name' => 'sample.csv'
+    //     ));
+    //     return $this->response;
+    // }
     public function csvdell(){
-        $this->loadModel('ProductDiscription');    
         $this->autoRender=false;
-        $deleteAllProductsByCSV="DELETE FROM oc_product, oc_product_description,oc_product_to_category
- USING oc_product_description INNER JOIN oc_product ON 'oc_product_description.product_id' = 'oc_product.product_id' INNER JOIN oc_product_to_category ON 'oc_product_description.product_id' = 'oc_product_to_category.product_id' WHERE 'oc_product_description.csvimport'= '1'
+        $deleteAllProductsByCSV="";
+        $this->loadModel('ProductDiscription');    
+        $deleteAllProductsByCSV="DELETE FROM p,pd,pc using  oc_product_description as pd 
+inner join oc_product as p on pd.product_id=p.product_id
+inner join oc_product_to_category as pc on pd.product_id=pc.product_id
+ WHERE pd.csvimport= 1
 ";
-        if($this->ProductDiscription->query($deleteAllProductsByCSV))
+// debug(is_array($this->ProductDiscription->query($deleteAllProductsByCSV)) or ($this->ProductDiscription->query($deleteAllProductsByCSV)));
+// exit();
+        if(is_array($this->ProductDiscription->query($deleteAllProductsByCSV)) or ($this->ProductDiscription->query($deleteAllProductsByCSV)))
         {
         $message = 'The whole previous data uploaded by Csvimport is deleted now';
         $this->Session->setFlash($message, 'success_flesh', array(), 'successfully');
@@ -133,7 +138,51 @@ class CsvimportsController extends AppController {
         }
         $this->redirect(array('action'=>'import'));
     }
-    
+
+    public function dellcat()
+    {
+        $data='';
+        
+        $this->loadModel('CategoryDescription');
+        $cd=$this->CategoryDescription->find('all');
+        // debug($cd);
+        foreach ($cd as $key => $value) {
+            $data[$key]['0']=$value['CategoryDescription']['category_id'];
+            $data[$key]['1']=$value['CategoryDescription']['name'];
+            $cat_id=$value['CategoryDescription']['category_id'];
+            $Csvimport_products="select * FROM oc_product_description as pd inner join oc_product as p on pd.product_id=p.product_id inner join oc_product_to_category as pc on pd.product_id=pc.product_id WHERE pd.csvimport= 1 AND pc.category_id=$cat_id
+            ";
+            $data[$key]['2']= count($this->CategoryDescription->query($Csvimport_products));
+            $Vender_Products="select * from oc_product_to_category where oc_product_to_category.category_id=$cat_id
+            ";
+            $data[$key]['3']= count($this->CategoryDescription->query($Vender_Products));
+        }
+        // debug($data);
+        // exit();
+        $this->set('categories',$data);
+        // debug($this->CategoryDescription->query($category_products));
+    }
+    public function delete($id=null)
+    {
+        
+        $this->loadModel('CategoryDescription');
+        $this->autoRender=false;
+        $dell_product_wrt_cat="DELETE FROM p,pd,pc using  oc_product_description as pd 
+inner join oc_product as p on pd.product_id=p.product_id
+inner join oc_product_to_category as pc on pd.product_id=pc.product_id
+ WHERE pd.csvimport= 1 and pc.category_id=$id";
+    debug($this->CategoryDescription->query($dell_product_wrt_cat));
+    if(is_array($this->CategoryDescription->query($dell_product_wrt_cat)) or ($this->CategoryDescription->query($dell_product_wrt_cat)))
+            {
+            $message = 'Data uploaded by Csvimport is deleted now';
+            $this->Session->setFlash($message, 'success_flesh', array(), 'successfully');
+            }
+            else{
+                $message='Data uploaded by Csvimport is not deleted! Please try again';
+            $this->Session->setFlash($message, 'error_flesh', array(), 'error');
+            }
+            $this->redirect(array('action'=>'dellcat'));
+        }
 }  
 
 ?>

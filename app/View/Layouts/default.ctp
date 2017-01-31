@@ -164,7 +164,7 @@
                                     </a>
                                 </li>
                                 <li class="nav-item  ">
-                                    <a href="elements_steps.html" class="nav-link ">
+                                    <a href="<?php echo $this->webroot;?>csvimports/dellcat" class="nav-link ">
                                         <span class="title">DELL CSV data</span>
                                     </a>
                                 </li>
